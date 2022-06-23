@@ -1,40 +1,29 @@
 
 """
 # -- --------------------------------------------------------------------------------------------------- -- #
-# -- project: A SHORT DESCRIPTION OF THE PROJECT                                                         -- #
+# -- project: LABORATORY 2: High-Frequency Models                                                        -- #
 # -- script: data.py : python script for data collection                                                 -- #
-# -- author: YOUR GITHUB USER NAME                                                                       -- #
-# -- license: THE LICENSE TYPE AS STATED IN THE REPOSITORY                                               -- #
-# -- repository: YOUR REPOSITORY URL                                                                     -- #
+# -- author: FacostaR                                                                                    -- #
+# -- license: GNU General Public License v3.0                                                            -- #
+# -- repository: https://github.com/FacostaR/myst_rfa_Lab2                                               -- #
 # -- --------------------------------------------------------------------------------------------------- -- #
 """
-
 import json
-import numpy as np
 import pandas as pd
 
-#Open JSON file
+# Orderbooks JSON file
+f = open('files/orderbooks_05jul21.json')
 
-f= open('orderbooks_05jul21.json')
-
-# Return JSON object as a Dictionary
+# Return JSON pbject as a dictionary
 orderbooks_data = json.load(f)
+data = orderbooks_data['bitfinex']
 
-orderbooks_data.keys()
+# Drop None keys
+data = {i_key: i_value for i_key, i_value in data.items() if i_value is not None}
 
-bitfinex_ts= list(orderbooks_data['bitfinex'].keys())
-kraken_ts = list(orderbooks_data['kraken'].keys())
-
-ob_data= orderbooks_data['bitfinex']
-
-# Drop  None Keys
-ob_data= {i_key: i_value for i_key, i_value in ob_data.items() if i_value is not None}
-
-#Convert to DataFrame and rearange columns
-ob_data = {i_ob: pd.DataFrame(ob_data[i_ob])[['bid_size','bid','ask','ask_size']]
-                    if ob_data[i_ob] is not None else None for i_ob in list(ob_data.keys())}
-
-## Public Trades
-pt_data= pd.read_csv('btcusdt_binance.csv', index_col='timestamp')
-pt_data.index= pd.to_datetime(pt_data.index)
-pt_data.rename(columns= {'amount': 'volume'}, inplace='TRUE')
+# Convert to dataframe and rearange colums
+data = {i_ob: pd.DataFrame(data[i_ob])[['bid_size', 'bid', 'ask', 'ask_size']]
+           if data[i_ob] is not None else None for i_ob in list(data.keys())}
+# data
+ts = list(data.keys())
+l_ts = [pd.to_datetime(i_ts) for i_ts in ts]

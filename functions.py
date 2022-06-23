@@ -1,118 +1,75 @@
 
 """
 # -- --------------------------------------------------------------------------------------------------- -- #
-# -- project: A SHORT DESCRIPTION OF THE PROJECT                                                         -- #
-# -- script: functions.py : python script with general functions                                         -- #
-# -- author: YOUR GITHUB USER NAME                                                                       -- #
-# -- license: THE LICENSE TYPE AS STATED IN THE REPOSITORY                                               -- #
-# -- repository: YOUR REPOSITORY URL                                                                     -- #
+# -- project: LABORATORY 2: High-Frequency Models                                                        -- #
+# -- script: data.py : python script for data collection                                                 -- #
+# -- author: FacostaR                                                                                    -- #
+# -- license: GNU General Public License v3.0                                                            -- #
+# -- repository: https://github.com/FacostaR/myst_rfa_Lab2                                               -- #
 # -- --------------------------------------------------------------------------------------------------- -- #
 """
 import numpy as np
 import data as dt
 import pandas as pd
 
-# Read input Data
-data_ob = dt.ob_data
-
-
-# =========================================================FUNCION============================================================= #
-
-def r_metrics_ob(data_ob: dict) -> dict:
+# ============================================FUNCIONES======================================== #
+def experiments(ob_data: dict, ob_ts: list, method: str) -> pd.DataFrame:
     """
-    Funcion para calcular metricas de un Orderbook
+    Function used to perform experiments with orderbook data.
 
-    Parameters
+    arguments:
     ----------
+    ob_data: dictionary
+    dictionary type with the following structure:
+    'timestamp'
+    'bid_size'
+    'bid'
+    'ask'
+    'ask_size'
 
-    data_ob:dict (default:None)
+    ob_ts: list
+    list with timestamps in string format.
 
-        Datos  de entrada del Orderbook, es un diccionario con estructura siguiente:
-        'timestamp': objeto tipo timestamp reconocible por maquina e.g. pd.datatime()
-        'bid_size': Volumen de Bids
-        'bid': Niveles de Precio del Bid
-        'ask': Niveles de Precio del Ask
-        'ask_size': Volumen del Asks
+    method: str: 'midprice' or 'wmidprice'
+    string with the method that's going to be used in calculations.
 
-    Returns
-    -------
-
-    ret_data: dict
-
-        Diccionario con las metricas calculadas:
-        'No. Keys'
-        'OB Time'
-        'Time OB Updt'
-        'Spread'
-        'MidPrice'
-        'Price Levels'
-        'Bid Volume'
-        'Ask Volume'
-        'Total Volume'
-        'OrdB Imb'
-        'Weighted MP'
-        'VW Avg Price'
-
-    References
-    ----------
-    [1] https://www.geeksforgeeks.org/
-
+    Returns -> dataframe 
     """
 
-    # Time of Orderbook update
-    ob_ts = list(data_ob.keys())
-    l_ts = [pd.to_datetime(i_ts) for i_ts in ob_ts]
-    ob_m1 = np.median([l_ts[n_ts + 1] - l_ts[n_ts] for n_ts in range(0, len(l_ts) - 1)]).total_seconds() * 1000
+    l_ts = [pd.to_datetime(i) for i in ob_ts]
+    minutes = [i.minute for i in l_ts]
 
-    # Spread
-    ob_m2 = [data_ob[ob_ts[i]]['ask'][0] - data_ob[ob_ts[i]]['bid'][0] for i in range(0, len(ob_ts))]
+    m_counter = {i: minutes.count(i) for i in set(minutes)}
 
-    # Midprice
-    ob_m3 = [(data_ob[ob_ts[i]]['ask'][0] + data_ob[ob_ts[i]]['bid'][0]) * 0.5 for i in range(0, len(ob_ts))]
+    dict = {'time': ob_ts, 'minutes': minutes}
+    res = pd.DataFrame(data = dict)
+    res = res.sort_values(by=['minutes', 'time'])
+    res = res.reset_index(drop=True)
 
-    # No. Price Levels
-    ob_m4 = [data_ob[i_ts].shape[0] for i_ts in ob_ts]
+    if method == 'midprice':
+        prices = [(ob_data[ob_ts[i]]['ask'][0] + ob_data[ob_ts[i]]['bid'][0])*.5 for i in range(0, len(ob_ts))]
 
-    # Bid_Volume, Ask_Volume, Total_Volume
-    ob_m5 = [np.round(data_ob[i_ts]['bid_size'].sum(), 6) for i_ts in ob_ts]
-    ob_m5_1 = [np.round(data_ob[i_ts]['ask_size'].sum(), 6) for i_ts in ob_ts]
-    ob_m5_2 = [np.round(data_ob[i_ts]['bid_size'].sum() + data_ob[i_ts]['ask_size'].sum(), 6) for i_ts in ob_ts]
+    elif method == 'wmidprice':
+        fwmp = lambda x: np.sum((x['ask_size']/np.sum([x['bid_size'], x['ask_size']]))*x['bid'] + (x['bid_size']/np.sum([x['bid_size'], x['ask_size']]))*x['ask'])
+        prices = np.round([fwmp(ob_data[ob_ts[i]]) for i in range(len(ob_ts))], 2)
+    else:
+        print('error, method should be: \"midprice\" or  \"wmidprice\"')
 
-    # Orderbook Imbalance
-    # Sum(Bid Volume)/ Sum(Bid Volume , Ask Volume)
-    obim = [np.round(data_ob[i]['bid_size'].sum() / (data_ob[i]['bid_size'].sum() + data_ob[i]['ask_size'].sum()), 6)
-            for i in ob_ts]
+    res.drop(index=res.index[0], axis=0, inplace=True)
+    res = res.reset_index(drop=True)
 
-    # Weighted-Midprice
-    # Ask Volume/Sum(Bid Volume + Ask Volume)*Bid Price + Bid Volume/Sum(Bid Volume + Ask Volume)*Ask Price
+    res['martingale'] = [prices[i+1] == prices[i] for i in range(len(prices)-1)]
+    by_minute = res.groupby('minutes')
 
-    w_midprice = [
-        (data_ob[i]['ask_size'].sum() / (data_ob[i]['bid_size'].sum() + data_ob[i]['ask_size'].sum())) * data_ob[i][
-            'bid'] +
-        (data_ob[i]['bid_size'].sum() / (data_ob[i]['bid_size'].sum() + data_ob[i]['ask_size'].sum())) * data_ob[i][
-            'ask'] for i in ob_ts]
+    x = pd.DataFrame(by_minute['martingale'].sum())
 
-    # Volume-Weighted Average Price
-    # Sum((Bid price * Bid Volume + Ask price * Ask volume)/ Sum(Bid Volume + Ask Volume))
-    vw_midprice = [
-        ((data_ob[i]['bid'].sum() * data_ob[i]['bid_size'].sum()) + (data_ob[i]['ask'] * data_ob[i]['ask_size'].sum()))
-        / (data_ob[i]['bid_size'].sum() + data_ob[i]['ask_size'].sum()) for i in ob_ts]
+    e1 = list(x['martingale'])
+    total = [m_counter[i] for i in range(len(m_counter))]
+    prop1 = np.round([e1[i]/total[i] for i in range(len(total))], 4)
+    e2 = np.round([total[i]-e1[i] for i in range(len(total))], 4)
+    prop2 = np.round([e2[i]/total[i] for i in range(len(total))], 4)
 
-    ret_data = {'No. Keys': ob_ts, 'OB Time': l_ts,
-                'Time OB Updt': ob_m1, 'Spread': ob_m2,
-                'MidPrice': ob_m3, 'Price Levels': ob_m4,
-                'Bid Volume': ob_m5, 'Ask Volume': ob_m5_1,
-                'Total Volume': ob_m5_2, 'OrdB Imb': obim,
-                'Weighted MP': w_midprice, 'VW Avg Price': vw_midprice}
-
-    return ret_data
-
-
-def r_metrics_pt(data_pt: any) -> dict:
-    n_data_pt = data_pt['side'].resample('60T').count()
-    v_data_pt = data_pt['volume'].resample('60T').sum()
-    t_data_pt = v_data_pt.sum()
-
-    ret_data_pt = {'Numero de Trades': n_data_pt, 'Volumen de Trades': v_data_pt,
-                   'Monto Total de Trades': t_data_pt}
-    return ret_data_pt
+    exp = pd.DataFrame({'intervalo': list(np.arange(0, 60)), 'total': total, 
+        'e1': e1, 'e1_proportion': prop1,
+        'e2': e2, 'e2_proportion': prop2})
+    return exp
