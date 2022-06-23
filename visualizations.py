@@ -11,6 +11,7 @@
 
 from pandas import DataFrame
 import plotly.express as px
+import numpy as np
 
 def exp1_plot(df: DataFrame, x: str, y: str) -> 'stackedbarplot':
     """
@@ -29,7 +30,12 @@ def exp1_plot(df: DataFrame, x: str, y: str) -> 'stackedbarplot':
 
     Returns -> stacked barplot 
     """
-    fig = px.bar(df, x=x, y=y, title='martingale experiment')
+    fig = px.bar(df, x=x, y=y, title='martingale experiment', labels=dict(x=np.arange(0,59)))
+    fig.update_layout(
+        xaxis = {'type' : 'category'},
+        xaxis_title_text='Interval', # xaxis label
+        yaxis_title_text='occurrences' # yaxis label
+        )
     return fig.show()
 
 

@@ -34,6 +34,10 @@ def experiments(ob_data: dict, ob_ts: list, method: str) -> pd.DataFrame:
     string with the method that's going to be used in calculations.
 
     Returns -> dataframe 
+
+    References:
+    ----------
+    [1] Martingale. Encyclopedia of Mathematics. URL: http://encyclopediaofmath.org/index.php?title=Martingale&oldid=49256
     """
 
     l_ts = [pd.to_datetime(i) for i in ob_ts]
