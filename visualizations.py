@@ -14,7 +14,7 @@ import plotly.express as px
 
 def exp1_plot(df: DataFrame, x: str, y: str) -> 'stackedbarplot':
     """
-    Function used to plot a stacked bar plot
+    Function used to plot a stacked bar for experiment 1
 
     arguments:
     ----------
@@ -30,7 +30,7 @@ def exp1_plot(df: DataFrame, x: str, y: str) -> 'stackedbarplot':
     Returns -> stacked barplot 
     """
     fig = px.bar(df, x=x, y=y, title='martingale experiment')
-    fig.show()
+    return fig.show()
 
 
 
