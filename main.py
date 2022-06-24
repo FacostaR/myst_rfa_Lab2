@@ -31,5 +31,9 @@ e21_mean = np.round(np.mean(e2['e1_proportion']), 2)
 e22_mean = np.round(np.mean(e2['e2_proportion']), 2)
 
 # =========================================ROLL============================================ #
-# ob_ts = list(ob_data.keys())
+
 # roll = fn.roll(ob_data, ob_ts, True)
+
+final_roll_model = fn.roll_model(dt.data)
+
+vz.plot_roll(dt.data, vz.df_roll, 'observed')

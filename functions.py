@@ -77,3 +77,56 @@ def experiments(ob_data: dict, ob_ts: list, method: str) -> pd.DataFrame:
         'e1': e1, 'e1_proportion': prop1,
         'e2': e2, 'e2_proportion': prop2})
     return exp
+
+
+
+def roll_model(data) -> dict:
+    ''' 
+    Function which principal objective is to calculate observed bid and ask as well as
+    the theorical ones
+    
+    # Arguments:
+    
+    data: order books in a dictionary type
+
+    # Returns:
+
+    returns a dictionary which contains theorical ask and bid as well as the observed ones and 
+    it also returns a theorical spread
+
+    # References:
+    - 'El modelo de Roll' pdf by Juan Francisco Muñoz-Elguezbal (July 18, 2017)
+
+    '''
+
+    ob_data = dt.data
+    ob_ts = list(ob_data.keys())
+    prices = [(ob_data[ob_ts[i]]['ask'][0] + ob_data[ob_ts[i]]['bid'][0])*.5 for i in range(0, len(ob_ts))]
+
+    observed_ask = []
+    observed_bid = []
+    for ob_i in range(len(ob_ts)):
+        observed_ask.append(ob_data[ob_ts[ob_i]]['ask']['0'])
+        observed_bid.append(ob_data[ob_ts[ob_i]]['bid']['0'])
+
+    dif = []
+    for i in range(len(ob_ts)-1):
+        dif.append(prices[i+1] - prices[i])
+
+
+    variance = np.cov(dif[1:len(dif)-1],dif[2:])[1][1]
+    covariance = np.cov(dif[1:len(dif)-1],dif[2:])[1][0]
+
+
+    Roll_Model_Spread = 2*(np.sqrt(-covariance))
+
+    theorical_ask = []
+    theorical_bid = []
+    for mid_price in prices:
+        theorical_ask.append(mid_price + Roll_Model_Spread)
+        theorical_bid.append(mid_price - Roll_Model_Spread)
+
+    roll_model_info = {'Roll_Model_Spread':Roll_Model_Spread,'observed_ask':observed_ask,'observed_bid':observed_bid,'theorical_ask':theorical_ask,'theorical_bid':theorical_bid,
+    'Final_Parameters':[variance,covariance]}
+   
+    return roll_model_info

@@ -13,6 +13,10 @@ from pandas import DataFrame
 import plotly.express as px
 import numpy as np
 
+import data as dt
+import functions as fn
+import pandas as pd
+
 def exp1_plot(df: DataFrame, x: str, y: str) -> 'stackedbarplot':
     """
     Function used to plot a stacked bar for experiment 1
@@ -42,6 +46,37 @@ def exp1_plot(df: DataFrame, x: str, y: str) -> 'stackedbarplot':
 
 
 
+def plot_roll(x,y,option, show = False):
+    ''' 
+    Function created with the purpose of plotting the created variables
+
+     arguments:
+    ----------
+    x: List
+    List containing timestamps of str type
+
+    y: DataFrame
+    DataFrame containing results from a roll model analysis
+    
+    '''
+    
+    ob_data = x
+    ob_ts = list(ob_data.keys())
+    y['prices'] = [(ob_data[ob_ts[i]]['ask'][0] + ob_data[ob_ts[i]]['bid'][0])*.5 for i in range(0, len(ob_ts))]
+    y['x'] = ob_ts
+
+    if option == 'theorical':
+        fig = px.line(y, x = 'x', y = ['theorical_ask','theorical_bid','prices'], title = 'Theorical values')
+    
+
+    elif option == 'observed':
+        fig = px.line(y, x = 'x', y = ['observed_ask','observed_bid','prices'], title = 'Observed values')
+    
+    if show:
+        fig.show()
+    
 
 
+final_roll_model = fn.roll_model(dt.data)
+df_roll = pd.DataFrame({'observed_ask':final_roll_model['observed_ask'],'observed_bid':final_roll_model['observed_bid'],'theorical_ask':final_roll_model['theorical_ask'],'theorical_bid':final_roll_model['theorical_bid']})
 
